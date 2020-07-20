@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  shohin_mei: MyString
+  shohin_bunrui: MyString
+  hanbai_tanka: 1
+  shiire_tanka: 1
+  torokubi: 2020-07-21
+
+two:
+  shohin_mei: MyString
+  shohin_bunrui: MyString
+  hanbai_tanka: 1
+  shiire_tanka: 1
+  torokubi: 2020-07-21
