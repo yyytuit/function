@@ -111,4 +111,225 @@ class DbShohin < ApplicationRecord
     # # SQLの直書
     find_by_sql("SELECT * FROM db_shohins  WHERE shohin_bunrui = 'キッチン用品' OR hanbai_tanka >=3000").as_json
   end
+
+  # 3章メソッド
+  def self.db_count
+    # COUNT: テーブルのレコード数(行数)を教える
+    # Railsの書き方
+    all.count
+    # SQLの直書
+    find_by_sql("SELECT COUNT(*) FROM db_shohins").as_json
+    # Railsの書き方
+    select('shiire_tanka').count
+    # SQLの直書
+    find_by_sql("SELECT COUNT(shiire_tanka) FROM db_shohins").as_json
+  end
+
+  def self.db_sum
+    # SUM: テーブルの数値列のデータを合計する
+    # Railsの書き方
+    select('SUM(hanbai_tanka)').as_json
+    # SQLの直書
+    find_by_sql("SELECT SUM(hanbai_tanka) FROM db_shohins").as_json
+    # Railsの書き方
+    select('SUM(shiire_tanka)').as_json
+    # SQLの直書
+    find_by_sql("SELECT SUM(shiire_tanka) FROM db_shohins").as_json
+  end
+
+  def self.db_avg
+    # AVG: テーブルの数値列のデータを平均する
+    # Railsの書き方
+    select('AVG(hanbai_tanka)').as_json
+    # SQLの直書
+    find_by_sql("SELECT AVG(hanbai_tanka) FROM db_shohins").as_json
+    # # Railsの書き方
+    select('AVG(shiire_tanka)').as_json
+    # # SQLの直書
+    find_by_sql("SELECT AVG(shiire_tanka) FROM db_shohins").as_json
+  end
+
+  def self.max_min
+    # MAX: テーブルの任意の列のデータの最大値を求める
+    # MIN: テーブルの任意の列のデータの最小値を求める
+    # Railsの書き方
+    select('MAX(hanbai_tanka), MIN(shiire_tanka)').as_json
+    # SQLの直書
+    find_by_sql("SELECT MAX(hanbai_tanka), MIN(shiire_tanka) FROM db_shohins").as_json
+    # Railsの書き方
+    select('MAX(torokubi), MIN(torokubi)').as_json
+    # SQLの直書
+    find_by_sql("SELECT MAX(torokubi), MIN(torokubi) FROM db_shohins").as_json
+  end
+
+  def self.count_distinct
+    # COUNTとDISTINCTと併用
+    # Railsの書き方
+    select('COUNT(DISTINCT shohin_bunrui)').as_json
+    # SQLの直書
+    find_by_sql("SELECT COUNT(DISTINCT shohin_bunrui) FROM db_shohins").as_json
+  end
+
+  def self.group
+    # GROUP BY句で分類ごとにグループに分けることができる。
+    # Railsの書き方
+    select('shohin_bunrui, COUNT(*)').group('shohin_bunrui').as_json
+    # SQLの直書
+    find_by_sql("SELECT shohin_bunrui, COUNT(*) FROM db_shohins GROUP BY shohin_bunrui").as_json
+    # Railsの書き方
+    select('shiire_tanka, COUNT(*)').group('shiire_tanka').as_json
+    # SQLの直書
+    find_by_sql("SELECT shiire_tanka, COUNT(*) FROM db_shohins GROUP BY shiire_tanka").as_json
+  end
+
+  def self.group_where
+    # GROUP BY と WHERE句
+    # Railsの書き方
+    select('shiire_tanka, COUNT(*)').where(shohin_bunrui: '衣服').group('shiire_tanka').as_json
+    # 面白ポイント SQLでは普通where句とgroup by句の順番で書かないとエラーになる。
+    # 理由はグループで絞ったあとに特定ができないから。ただRailsのgroupメソッドとwhereメソッドを逆に書いたとしても、
+    # Railsが勝手に処理をして、正しい順番でSQLを発行してくれる。
+    select('shiire_tanka, COUNT(*)').group('shiire_tanka').where(shohin_bunrui: '衣服').as_json
+    # SQLの直書
+    find_by_sql("SELECT shiire_tanka, COUNT(*) FROM db_shohins WHERE shohin_bunrui = '衣服' GROUP BY shiire_tanka").as_json
+    # 下記はエラーになる。
+    find_by_sql("SELECT shiire_tanka, COUNT(*) FROM db_shohins GROUP BY shiire_tanka WHERE shohin_bunrui = '衣服'").as_json
+  end
+
+  def self.having
+    # HAVING句
+    # Railsの書き方
+    select('shohin_bunrui, COUNT(*)').group('shohin_bunrui').having('COUNT(*) = 2').as_json
+    select('shohin_bunrui, AVG(hanbai_tanka)').group('shohin_bunrui').having('AVG(hanbai_tanka) >= 2500').as_json
+    # SQLの直書
+    find_by_sql("SELECT shohin_bunrui, COUNT(*) FROM db_shohins GROUP BY shohin_bunrui HAVING COUNT(*) = 2").as_json
+    find_by_sql("SELECT shohin_bunrui, AVG(hanbai_tanka) FROM db_shohins GROUP BY shohin_bunrui HAVING AVG(hanbai_tanka) >= 2500").as_json
+  end
+
+  def self.order_by
+    # 昇順と降順
+    # Railsの書き方
+    all.order(hanbai_tanka: :desc)
+    all.order(:hanbai_tanka)
+    # SQLの直書
+    find_by_sql("SELECT * FROM db_shohins ORDER BY hanbai_tanka DESC").as_json
+    find_by_sql("SELECT * FROM db_shohins ORDER BY hanbai_tanka").as_json
+  end
+
+  # 4章
+  def self.sonyu
+    # データの挿入
+    # Railsの書き方
+    create(shohin_mei: '圧力鍋',shohin_bunrui: 'キッチン用品', hanbai_tanka: 6800)
+    # SQLの直書
+    # find_by_sql("INSERT INTO db_shohins (shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, created_at, updated_at) VALUES ('圧力鍋', 'キッチン用品', 6800, 5000, '2020-08-02 04:50:28', '2020-08-02 04:50:28')")
+    # 上記は無理だということがわかった。理由はfind_by_sql自体がsqlを実行するメソッドだがレコードを検索のためのメソッドだから。
+    # 色々調べると、ActiveRecord::Base.connection.execute(引数)で上手くいくことがわかった。
+    # DbShohin.connection.execute("INSERT INTO db_shohins (shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, created_at, updated_at) VALUES ('ナイフ', 'キッチン用品', 1000, 300, '2020-08-02 05:50:28', '2020-08-02 05:50:28')")
+    # ただし面白いポイントとしては、null falseに指定してないtorokubiなどはnilで登録されるが、rails独自のcreated_atやupdated_atはnilが許容されないので、insert文を直接書く場合は絶対に定義しないといけない。
+    # 一つのデータを作る場合
+    sql = <<-"EOS"
+    INSERT INTO db_shohins (shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, created_at, updated_at) VALUES ('ナイフ', 'キッチン用品', 1000, 300, '2020-08-02 05:50:28', '2020-08-02 05:50:28')
+    EOS
+    # 複数のデータを作る場合
+    sql = <<-"EOS"
+    INSERT INTO db_shohins (shohin_mei, shohin_bunrui, hanbai_tanka, shiire_tanka, created_at, updated_at)
+    VALUES ('穴あけパンチ', '事務用品', 500, 320, '2020-08-02 05:50:28', '2020-08-02 05:50:28'),
+           ('カッターシャツ', '衣服', 4000, 28000, '2020-08-02 05:50:28', '2020-08-02 05:50:28'),
+           ('包丁', 'キッチン用品', 3000, 2800, '2020-08-02 05:50:28', '2020-08-02 05:50:28')
+    EOS
+    connection.execute(sql)
+  end
+
+  def self.table_create
+    # テーブルの作成
+    # sql = <<-"EOS"
+    #   CREATE TABLE ShohinCopy (id int, shohin_mei varchar(255), shohin_bunrui varchar(255), hanbai_tanka int ,shiire_tanka int, torokubi date, created_at datetime, updated_at datetime)
+    # EOS
+    # ActiveRecord::Base.connection.execute(sql)
+    # 上記でもできたが、以下の方が正しいらしい。
+    ActiveRecord::Base.connection.create_table "shohin_copys" do |t|
+      t.string :shohin_mei
+      t.string :shohin_bunrui
+      t.integer :hanbai_tanka
+      t.integer :shiire_tanka
+      t.date :torokubi
+      t.timestamps
+    end
+  end
+
+  def self.create_model(tabale_name)
+    # モデルの作成
+    klass = Class.new(ActiveRecord::Base) do |c|
+      c.table_name = tabale_name
+    end
+    model_name = table_name.singularize.camelcase
+    Object.const_set(model_name, klass)
+
+    # 動的にファイルを作って、起動させたいが、ファイルはできるが上手く動かない
+    # model_file = table_name.singularize
+    # file = __dir__ + "/" + model_file + ".rb"
+    # create_class = "class #{model_name} < ActiveRecord::Base; end"
+    # IO.write(file, create_class)
+    # model_path = __dir__ + "/" + model_name
+    # require_relative model_path
+  end
+
+  def self.copy
+    # データのコピー
+    sql = <<-"EOS"
+    INSERT INTO shohin_copys (id , shohin_mei , shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi, created_at, updated_at )
+    SELECT id, shohin_mei , shohin_bunrui, hanbai_tanka, shiire_tanka, torokubi, created_at, updated_at from db_shohins
+    EOS
+    ActiveRecord::Base.connection.execute(sql)
+  end
+
+  def self.update_all
+    # 全データの更新
+    # SQLの直書
+    sql = <<-"EOS"
+    UPDATE db_shohins
+    SET shohin_bunrui = '衣類'
+    EOS
+    ActiveRecord::Base.connection.execute(sql)
+
+    # Railsの直書
+    all.update_all(shohin_bunrui: 'キッチン用品')
+  end
+
+  def self.update_row
+    # 列データの更新
+    # SQLの直書
+    sql = <<-"EOS"
+    UPDATE db_shohins
+    SET hanbai_tanka = hanbai_tanka * 10
+    WHERE shohin_bunrui = 'キッチン用品'
+    EOS
+    ActiveRecord::Base.connection.execute(sql)
+
+    # Railsの直書
+    where(shohin_bunrui: 'キッチン用品').each do |n|
+      n.update(hanbai_tanka: n.hanbai_tanka * 10 )
+    end
+  end
+
+  def self.update_rows
+    # 列データの複数の更新
+    # SQLの直書
+    sql = <<-"EOS"
+    UPDATE db_shohins
+    SET hanbai_tanka = hanbai_tanka * 10,
+        shiire_tanka = shiire_tanka / 2
+    WHERE shohin_bunrui = 'キッチン用品'
+    EOS
+    ActiveRecord::Base.connection.execute(sql)
+
+    # Railsの直書
+    where(shohin_bunrui: 'キッチン用品').each do |n|
+      if n.shiire_tanka
+        n.update(hanbai_tanka: n.hanbai_tanka * 10, shiire_tanka: n.shiire_tanka / 2)
+      end
+    end
+    # 当然かもしれないが、each文で回して一つ一つupdate処理しているので時間がかかる。10データぐらいで2場合時間がかかった。5msと10msの違いくらい
+  end
 end

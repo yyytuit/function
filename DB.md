@@ -60,3 +60,9 @@
   [ActiveRecord 入門](https://qiita.com/tfrcm/items/80625a75959591c2b7cd)
 
   [AS 句を使う書き方](https://qiita.com/k-shimoji/items/7d71b3d5aa5892700b6c)
+
+  [テーブルの挿入](https://madogiwa0124.hatenablog.com/entry/2017/08/28/000127)
+
+  [テーブルの作成(動的 1)](http://tech.feedforce.jp/modelless-table-on-rails.html)
+
+  [テーブルの作成(動的 2)](http://tech.feedforce.jp/modelless-table-on-rails.html)
