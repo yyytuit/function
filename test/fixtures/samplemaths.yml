@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  m: 
+  'n': 1
+  p: 1
+
+two:
+  m: 
+  'n': 1
+  p: 1
