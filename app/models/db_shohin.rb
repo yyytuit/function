@@ -293,7 +293,7 @@ class DbShohin < ApplicationRecord
     EOS
     ActiveRecord::Base.connection.execute(sql)
 
-    # Railsの直書
+    # Railsの書き方
     all.update_all(shohin_bunrui: 'キッチン用品')
   end
 
@@ -307,7 +307,7 @@ class DbShohin < ApplicationRecord
     EOS
     ActiveRecord::Base.connection.execute(sql)
 
-    # Railsの直書
+    # Railsの書き方
     where(shohin_bunrui: 'キッチン用品').each do |n|
       n.update(hanbai_tanka: n.hanbai_tanka * 10 )
     end
@@ -324,12 +324,97 @@ class DbShohin < ApplicationRecord
     EOS
     ActiveRecord::Base.connection.execute(sql)
 
-    # Railsの直書
+    # Railsの書き方
     where(shohin_bunrui: 'キッチン用品').each do |n|
       if n.shiire_tanka
         n.update(hanbai_tanka: n.hanbai_tanka * 10, shiire_tanka: n.shiire_tanka / 2)
       end
     end
     # 当然かもしれないが、each文で回して一つ一つupdate処理しているので時間がかかる。10データぐらいで2場合時間がかかった。5msと10msの違いくらい
+  end
+
+  def self.sub_qery
+    # SQLの直書
+    find_by_sql('SELECT shohin_bunrui, cnt_shohin
+                 FROM (SELECT shohin_bunrui, COUNT(*) AS cnt_shohin
+                       FROM db_shohins
+                       GROUP BY shohin_bunrui)
+                 AS shohinsums')
+
+    # Railsの書き方
+    # 変数に収納パターン
+    sq = select('shohin_bunrui, COUNT(*) AS cnt_shohin')
+         .group('shohin_bunrui')
+    select('shohin_bunrui, cnt_shohin').from("(#{sq.to_sql}) AS shohinsums")
+
+    # いっぺんに書くパターン
+    select('shohin_bunrui, cnt_shohin').from("(#{select('shohin_bunrui, COUNT(*) AS cnt_shohin').group('shohin_bunrui').to_sql}) AS shohinsums")
+  end
+
+  def self.sub_qery_nest
+    # SQLの直書
+    find_by_sql('SELECT shohin_bunrui, cnt_shohin
+                 FROM (SELECT *
+                        FROM (SELECT shohin_bunrui, COUNT(*) AS cnt_shohin
+                              FROM db_shohins
+                              GROUP BY shohin_bunrui) AS shohinsum
+                        WHERE cnt_shohin < 4)
+                 AS shohinsum2')
+
+    # Railsの書き方
+    # 変数に収納パターン
+    shohinsum = select('shohin_bunrui, COUNT(*) AS cnt_shohin')
+                .group('shohin_bunrui')
+
+    shohinsum2 = select('*').from("(#{shohinsum.to_sql}) AS shohinsum").where('cnt_shohin < 4')
+
+    select('shohin_bunrui, cnt_shohin').from("(#{shohinsum2.to_sql}) AS shohinsum2")
+
+    # いっぺんに書くパターン
+    select('shohin_bunrui, cnt_shohin')
+    .from("(#{select('*')
+      .from("(#{select('shohin_bunrui, COUNT(*) AS cnt_shohin')
+        .group('shohin_bunrui').to_sql}) AS shohinsum")
+      .where('cnt_shohin < 4').to_sql})
+    AS shohinsum2")
+  end
+
+  def self.scala
+    # SQLの直書
+    find_by_sql('SELECT shohin_mei, hanbai_tanka
+                 FROM db_shohins
+                 WHERE hanbai_tanka > (SELECT AVG(hanbai_tanka) FROM db_shohins)')
+
+    # Railsの書き方
+    select('shohin_mei, hanbai_tanka').where("hanbai_tanka > (#{DbShohin.select('AVG(hanbai_tanka)').to_sql})")
+  end
+
+  def self.scala_having
+    # SQLの直書
+    find_by_sql('SELECT shohin_bunrui, AVG(hanbai_tanka)
+                 FROM db_shohins
+                 GROUP BY shohin_bunrui
+                 having AVG(hanbai_tanka) > (SELECT AVG(hanbai_tanka) FROM db_shohins)')
+
+    # Railsの書き方
+    select('shohin_bunrui, AVG(hanbai_tanka)').group('shohin_bunrui')
+    .having("AVG(hanbai_tanka) > (#{DbShohin.select('AVG(hanbai_tanka)').to_sql})")
+  end
+
+  def self.correlation
+     # SQLの直書
+    #  find_by_sql('SELECT shohin_bunrui, shohin_mei, hanbai_tanka
+    #  FROM db_shohins AS s1
+    #  WHERE hanbai_tanka > (SELECT AVG(hanbai_tanka)
+    #  FROM db_shohins AS s2
+    #  WHERE s1.shohin_bunrui = s2.shohin_bunrui
+    #  GROUP BY shohin_bunrui)')
+
+     # Railsの書き方
+    #  sel = DbShohin.select('shohin_bunrui, shohin_mei, hanbai_tanka').from('db_shohins AS s1')
+    #  grp = DbShohin.select('AVG(hanbai_tanka)').group('shohin_bunrui')
+     select('shohin_bunrui, shohin_mei, hanbai_tanka').from('db_shohins AS s1')
+     .where("hanbai_tanka > #{DbShohin.select('AVG(hanbai_tanka)').from('db_shohins AS s2')
+     .where('s1.shohin_bunrui = s2.shohin_bunrui').group('shohin_bunrui').to_sql}")
   end
 end
