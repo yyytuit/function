@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_07_20_174829) do
+ActiveRecord::Schema.define(version: 2020_09_06_072701) do
 
   create_table "db_shohins", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "shohin_mei", null: false
@@ -18,6 +18,37 @@ ActiveRecord::Schema.define(version: 2020_07_20_174829) do
     t.integer "hanbai_tanka"
     t.integer "shiire_tanka"
     t.date "torokubi"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "samplelikes", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.string "strcol", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "samplemaths", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.decimal "m", precision: 10
+    t.integer "n"
+    t.integer "p"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "samplestrs", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.string "str1", limit: 40
+    t.string "str2", limit: 40
+    t.string "str3", limit: 40
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "tenposhohins", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.integer "shohin_id", null: false
+    t.string "code", null: false
+    t.string "tenpo_mei", null: false
+    t.integer "suryo", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

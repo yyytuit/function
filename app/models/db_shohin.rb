@@ -417,4 +417,41 @@ class DbShohin < ApplicationRecord
      .where("hanbai_tanka > #{DbShohin.select('AVG(hanbai_tanka)').from('db_shohins AS s2')
      .where('s1.shohin_bunrui = s2.shohin_bunrui').group('shohin_bunrui').to_sql}")
   end
+
+  def self.between
+    # sqlの直書き
+    find_by_sql("SELECT id, shohin_mei, hanbai_tanka FROM db_shohins WHERE hanbai_tanka BETWEEN 100 AND 1000")
+    # railsの書き方
+    select('id, shohin_mei, hanbai_tanka').where(hanbai_tanka: 100..1000)
+  end
+
+  def self.not_between
+    # sqlの直書き
+    find_by_sql("SELECT id, shohin_mei, hanbai_tanka FROM db_shohins WHERE hanbai_tanka > 100 AND hanbai_tanka < 1000")
+    # railsの書き方
+    select('id, shohin_mei, hanbai_tanka').where('hanbai_tanka > 100 AND hanbai_tanka < 1000')
+  end
+
+  def self.is_null
+    # sqlの直書き
+    find_by_sql('SELECT id, shohin_mei, shiire_tanka FROM db_shohins WHERE shiire_tanka IS NULL')
+    # railsの書き方
+    select('id, shohin_mei, shiire_tanka').where(shiire_tanka: nil)
+  end
+
+  def self.is_not_null
+    # sqlの直書き
+    find_by_sql('SELECT id, shohin_mei, shiire_tanka FROM db_shohins WHERE shiire_tanka IS NOT NULL')
+    # railsの書き方
+    select('id, shohin_mei, shiire_tanka').where.not(shiire_tanka: nil)
+  end
+
+  def self.in
+    # sqlの直書き
+    find_by_sql('SELECT id, shohin_mei, shiire_tanka FROM db_shohins WHERE shiire_tanka IN (320, 500, 5000)')
+    # railsの書き方
+    select('id, shohin_mei, shiire_tanka').where(shiire_tanka: [320, 500, 5000])
+  end
+
+  
 end

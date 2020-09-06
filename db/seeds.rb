@@ -8,3 +8,5 @@
 require './db/seeds/db_shohin.rb'
 require './db/seeds/samplemath.rb'
 require './db/seeds/samplestr.rb'
+require './db/seeds/samplelike.rb'
+require './db/seeds/tenposhohin.rb'

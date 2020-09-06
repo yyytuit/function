@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  shohin_id: 1
+  tenpo_mie: MyString
+  suryo: 1
+
+two:
+  shohin_id: 1
+  tenpo_mie: MyString
+  suryo: 1
