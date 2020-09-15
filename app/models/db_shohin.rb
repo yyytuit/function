@@ -453,5 +453,17 @@ class DbShohin < ApplicationRecord
     select('id, shohin_mei, shiire_tanka').where(shiire_tanka: [320, 500, 5000])
   end
 
-  
+  def self.in_sub
+    # sqlの直書き
+    find_by_sql("SELECT shohin_mei, hanbai_tanka FROM db_shohins WHERE id IN (SELECT shohin_id FROM tenposhohins WHERE code = '000C')")
+    # railsの書き方
+    DbShohin.select('shohin_mei,hanbai_tanka').where(id: Tenposhohin.select(:shohin_id).where(code: '000C'))
+  end
+
+  def self.exist
+    # sqlの直書き
+    find_by_sql("SELECT shohin_mei, hanbai_tanka FROM db_shohins AS s WHERE EXISTS (SELECT * FROM tenposhohins AS ts WHERE ts.code = '000C' AND ts.shohin_id = s.id)")
+    # railsの書き方
+    # DbShohin.select('shohin_mei,hanbai_tanka').where(id: Tenposhohin.select(:shohin_id).where(code: '000C'))
+  end
 end
