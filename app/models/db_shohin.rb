@@ -128,11 +128,12 @@ class DbShohin < ApplicationRecord
   def self.db_sum
     # SUM: テーブルの数値列のデータを合計する
     # Railsの書き方
-    select('SUM(hanbai_tanka)').as_json
+    all.sum {|h| h[:hanbai_tanka] }
+    all.inject(0) {|sum, h| sum + h[:hanbai_tanka]}
     # SQLの直書
     find_by_sql("SELECT SUM(hanbai_tanka) FROM db_shohins").as_json
     # Railsの書き方
-    select('SUM(shiire_tanka)').as_json
+    all.sum {|s| s[:shiire_tanka] }
     # SQLの直書
     find_by_sql("SELECT SUM(shiire_tanka) FROM db_shohins").as_json
   end
@@ -457,13 +458,70 @@ class DbShohin < ApplicationRecord
     # sqlの直書き
     find_by_sql("SELECT shohin_mei, hanbai_tanka FROM db_shohins WHERE id IN (SELECT shohin_id FROM tenposhohins WHERE code = '000C')")
     # railsの書き方
-    DbShohin.select('shohin_mei,hanbai_tanka').where(id: Tenposhohin.select(:shohin_id).where(code: '000C'))
+    select('shohin_mei,hanbai_tanka').where(id: Tenposhohin.select(:shohin_id).where(code: '000C'))
   end
 
   def self.exist
     # sqlの直書き
     find_by_sql("SELECT shohin_mei, hanbai_tanka FROM db_shohins AS s WHERE EXISTS (SELECT * FROM tenposhohins AS ts WHERE ts.code = '000C' AND ts.shohin_id = s.id)")
     # railsの書き方
-    # DbShohin.select('shohin_mei,hanbai_tanka').where(id: Tenposhohin.select(:shohin_id).where(code: '000C'))
+    # railsにexist?関数はあるが、上記のようにサブクエリを使った存在確認はできない
+  end
+
+  def self.when
+    # sqlの直書き
+    find_by_sql("select shohin_mei,
+      case when shohin_bunrui = '衣服' then CONCAT('A:', shohin_bunrui)
+           when shohin_bunrui = '事務用品' then CONCAT('B:', shohin_bunrui)
+           when shohin_bunrui = 'キッチン用品' then CONCAT('C:', shohin_bunrui)
+           else null
+           end as abc_shohin_bunrui
+       from db_shohins")
+    # rubyの書き方
+    # all.each do |n|
+    #   case
+    #   when n.shohin_bunrui == '衣服' then p where(id: n.id).select("shohin_mei, CONCAT('A:','#{n.shohin_bunrui}') AS abc_shohin_bunrui")
+    #   when n.shohin_bunrui == '事務用品' then p where(id: n.id).select("shohin_mei, CONCAT('B:','#{n.shohin_bunrui}') AS abc_shohin_bunrui")
+    #   when n.shohin_bunrui == 'キッチン用品' then p where(id: n.id).select("shohin_mei, CONCAT('C:','#{n.shohin_bunrui}') AS abc_shohin_bunrui")
+    #   else
+    #   end
+    # end
+
+    all.each do |n|
+      case
+      when n.shohin_bunrui == '衣服' then p n.shohin_mei + '|' + 'A:' + n.shohin_bunrui
+      when n.shohin_bunrui == '事務用品' then p n.shohin_mei + '|' + 'B:' + n.shohin_bunrui
+      when n.shohin_bunrui == 'キッチン用品' then p n.shohin_mei + '|' + 'C:' + n.shohin_bunrui
+      else
+      end
+    end
+  end
+
+  def union
+    # sqlの直書き
+    find_by_sql('SELECT id, shohin_mei FROM db_shohins UNION SELECT id, shohin_mei FROM db_shohin2s')
+    # Railsの書き方
+    # part1和集合
+    union = DbShohin.select('id, shohin_mei').arel.union(DbShohin2.select('id, shohin_mei').arel).to_sql
+     # part2whereで絞り込んだ和集合
+    union = DbShohin.select('id, shohin_mei').where('shohin_bunrui =?','キッチン用品').arel.union(DbShohin2.select('id, shohin_mei').where('shohin_bunrui =?','キッチン用品').arel).to_sql
+    # 上記で "( SELECT id, shohin_mei FROM `db_shohins` UNION SELECT id, shohin_mei FROM `db_shohin2s` )"な文字列が生成される
+    DbShohin.from("#{union} db_shohins")
+  end
+
+  def union_all
+    # sqlの直書き
+    find_by_sql('SELECT id, shohin_mei FROM db_shohins UNION ALL SELECT id, shohin_mei FROM db_shohin2s')
+    # Railsの書き方
+    union = Arel::Nodes::UnionAll.new(DbShohin.select('id, shohin_mei').arel.ast,DbShohin2.select('id, shohin_mei').arel.ast).to_sql
+    # 上記で"( SELECT id, shohin_mei FROM `db_shohins` UNION ALL SELECT id, shohin_mei FROM `db_shohin2s` )"な文字列が生成される
+    DbShohin.from("#{union} db_shohins")
+  end
+
+  def intersect
+    # mysqlにはintersectはない。inner joinを使う
+    # sqlの直書き
+    # Railsの書き方
   end
 end
+

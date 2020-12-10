@@ -128,6 +128,4 @@ class Samplestr < ApplicationRecord
     # rubyっぽく書く
     all.each { |i| p i.str2.present? ? i.str2 : 'nullです' }
   end
-
-  
 end

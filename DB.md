@@ -81,6 +81,22 @@
 
   [ActiveRecord を使って FROM 句のサブクエリを書く方法](https://qiita.com/Y_uuu/items/558d4a2b8017ef8e2780)
 
+- union で参考にした。
+
+  [union のメソッド](http://dev.trick-with.net/2012/10/sql-union-with-rails/)
+
+  [arel テーブルの参考 1](https://techracho.bpsinc.jp/tsunekawa/2013_05_24/8502)
+
+  [arel テーブルの参考 2](http://labs.timedia.co.jp/2014/05/activerecord---arel-5-1.html)
+
+  [arel メソッド一覧](https://kinosuke.hatenablog.jp/entry/2016/03/30/153236)
+
+  [arel で union](https://makandracards.com/bonyiii/24302-activerecord-union-with-arel)
+
+  [arel のまとめサイト](https://site-builder.wiki/posts/1305)
+
+  [arel 一番わかりやすい](http://labs.timedia.co.jp/2013/10/activerecord4sql-arel.html)
+
 # VIEW 作成の手順
 
 1. まず view を定義する為にマイグレーションファイルの作成
@@ -263,7 +279,9 @@ ERROR 1471 (HY000): The target table shohinsum of the INSERT is not insertable-i
 
 以下のような Shouhinsum モデルを作成し、rails コンソールから Shohinsum.first など打った時に怒られた。
 
-```shohinsum.rb
+- shohinsum.rb
+
+```rb
 class Shohinsum < ApplicationRecord
 end
 ```
@@ -280,7 +298,9 @@ Reloading...
 
 マイグレーションファイルを確認すると以下のように書いていた。
 
-```db/migrate/20200819163105_create_shohinsums.rb
+- db/migrate/20200819163105_create_shohinsums.rb
+
+```rb
 
 class CreateShohinsum < ActiveRecord::Migration[5.2]
   def up
@@ -311,7 +331,9 @@ select * from shohinsum;
 
 なので、一度マイグレーションファイルを以下のように作成し直した。
 
-```db/migrate/20200819163105_create_shohinsums.rb
+- db/migrate/20200819163105_create_shohinsums.rb
+
+```rb
 
 class CreateShohinsums < ActiveRecord::Migration[5.2]
   def up
@@ -346,7 +368,9 @@ end
 
 まず作成したビューである Shohinsum で select 文を書く。
 
-```shohinsum.rb
+- shohinsum.rb
+
+```rb
 def self.view_select
   select('shohin_bunrui, cnt_shohin').as_json
 end
@@ -362,7 +386,9 @@ end
 
 上記と同じことを DbShohin モデルで再現させる。
 
-```db_shohin.rb
+- db_shohin.rb
+
+```rb
  def self.sub_qery_1
     # SQLの直書
     find_by_sql('SELECT shohin_bunrui, cnt_shohin
