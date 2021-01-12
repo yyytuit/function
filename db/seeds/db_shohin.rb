@@ -27,7 +27,7 @@ DbShohin.create!([
     torokubi: '2009-09-20',
   },
   {
-    shohin_mei: '包丁鍋',
+    shohin_mei: '圧力鍋',
     shohin_bunrui: 'キッチン用品',
     hanbai_tanka: 6800,
     shiire_tanka: 5000,

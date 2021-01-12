@@ -1,5 +1,5 @@
 class DbShohin < ApplicationRecord
-
+  has_many :tenposhohins
   # 2章メソッド
   def self.select_all
     # 全量検索
@@ -141,11 +141,11 @@ class DbShohin < ApplicationRecord
   def self.db_avg
     # AVG: テーブルの数値列のデータを平均する
     # Railsの書き方
-    select('AVG(hanbai_tanka)').as_json
+    average(:hanbai_tanka)
     # SQLの直書
     find_by_sql("SELECT AVG(hanbai_tanka) FROM db_shohins").as_json
     # # Railsの書き方
-    select('AVG(shiire_tanka)').as_json
+    average(:shiire_tanka)
     # # SQLの直書
     find_by_sql("SELECT AVG(shiire_tanka) FROM db_shohins").as_json
   end
@@ -414,9 +414,22 @@ class DbShohin < ApplicationRecord
      # Railsの書き方
     #  sel = DbShohin.select('shohin_bunrui, shohin_mei, hanbai_tanka').from('db_shohins AS s1')
     #  grp = DbShohin.select('AVG(hanbai_tanka)').group('shohin_bunrui')
-     select('shohin_bunrui, shohin_mei, hanbai_tanka').from('db_shohins AS s1')
-     .where("hanbai_tanka > #{DbShohin.select('AVG(hanbai_tanka)').from('db_shohins AS s2')
-     .where('s1.shohin_bunrui = s2.shohin_bunrui').group('shohin_bunrui').to_sql}")
+    #  select('shohin_bunrui, shohin_mei, hanbai_tanka').from('db_shohins AS s1')
+    #  .where("hanbai_tanka > #{DbShohin.select('AVG(hanbai_tanka)').from('db_shohins AS s2')
+    #  .where('s1.shohin_bunrui = s2.shohin_bunrui').group('shohin_bunrui').to_sql}")
+
+    # arelを使う
+    arel_table = DbShohin.arel_table
+    table_alias = arel_table.alias
+    find_by_sql(arel_table.project('shohin_bunrui, shohin_mei, hanbai_tanka').where(arel_table[:hanbai_tanka].gt arel_table.project(table_alias['avg(shohin_bunrui)'])).where(arel_table[:shohin_bunrui].eq table_alias[:shohin_bunrui]).group('shohin_bunrui').to_sql)
+
+    arel_table.project(arel_table[:id].count.as('id_count'), arel_table[:shohin_bunrui]).group(arel_table[:shohin_bunrui])
+    # SELECT COUNT(`db_shohins`.`id`) AS id_count, `db_shohins`.`shohin_bunrui` FROM `db_shohins` GROUP BY `db_shohins`.`shohin_bunrui`
+
+    counts = arel_table.project(arel_table[:id].count.as('id_count'), arel_table[:shohin_bunrui]).group(arel_table[:shohin_bunrui]).as('counts')
+    # (SELECT COUNT(`db_shohins`.`id`) AS id_count FROM `db_shohins` GROUP BY `db_shohins`.`shohin_bunrui`) counts
+
+    counts = DbShohin.select("COUNT(db_shohins.id) AS id_count, db_shohins.shohin_bunrui").group(:shohin_bunrui).arel.as('counts')
   end
 
   def self.between
@@ -497,7 +510,7 @@ class DbShohin < ApplicationRecord
     end
   end
 
-  def union
+  def self.union
     # sqlの直書き
     find_by_sql('SELECT id, shohin_mei FROM db_shohins UNION SELECT id, shohin_mei FROM db_shohin2s')
     # Railsの書き方
@@ -509,7 +522,7 @@ class DbShohin < ApplicationRecord
     DbShohin.from("#{union} db_shohins")
   end
 
-  def union_all
+  def self.union_all
     # sqlの直書き
     find_by_sql('SELECT id, shohin_mei FROM db_shohins UNION ALL SELECT id, shohin_mei FROM db_shohin2s')
     # Railsの書き方
@@ -517,11 +530,49 @@ class DbShohin < ApplicationRecord
     # 上記で"( SELECT id, shohin_mei FROM `db_shohins` UNION ALL SELECT id, shohin_mei FROM `db_shohin2s` )"な文字列が生成される
     DbShohin.from("#{union} db_shohins")
   end
+# mysqlにはintersectはない。inner joinを使うのでまずはinner joinから
 
-  def intersect
-    # mysqlにはintersectはない。inner joinを使う
+
+  def self.inner
     # sqlの直書き
+    find_by_sql('SELECT tenposhohins.*, db_shohins.* FROM tenposhohins INNER JOIN db_shohins ON db_shohins.id = tenposhohins.db_shohin_id')
     # Railsの書き方
+    joins(:tenposhohins)
+  end
+
+  def self.intersect
+    # mysqlにはintersectはない。inner joinを使う
+    find_by_sql('SELECT db_shohins.* FROM db_shohins INNER JOIN db_shohin2s ON db_shohins.id = db_shohin2s.id')
+    # Railsの書き方
+    joins('INNER JOIN db_shohin2s ON db_shohins.id = db_shohin2s.id')
+  end
+
+  # exceptはMySQLにはない。またpostgressのようなexceptはできない。left joinでやるとしても外部キーが必要
+  def self.left_outer_join
+    # sqlの直書き
+    find_by_sql('SELECT db_shohins.*, tenposhohins.* FROM db_shohins LEFT JOIN tenposhohins ON db_shohins.id = tenposhohins.db_shohin_id')
+    # Railsの書き方
+    left_outer_joins(:tenposhohins).select('db_shohins.*, tenposhohins.*')
+
+    # 店舗が登録されていない商品
+    find_by_sql('SELECT db_shohins.*, tenposhohins.* FROM db_shohins LEFT JOIN tenposhohins ON db_shohins.id = tenposhohins.db_shohin_id WHERE tenposhohins.id is null')
+    left_outer_joins(:tenposhohins).select('db_shohins.*, tenposhohins.*').where(tenposhohins: { id: nil })
+  end
+
+  def self.rank
+    # 販売単価のランキング、postgressやoracleだとrank関数が使えるが、mysqlでは使えないので、自作。順位を飛ばすランキング
+    find_by_sql('SELECT shohin_mei, shohin_bunrui, hanbai_tanka, (SELECT COUNT(*) + 1 FROM db_shohins AS shohin WHERE shohin.hanbai_tanka > db_shohins.hanbai_tanka) AS ranking  FROM db_shohins')
+    find_by_sql('SELECT shohin_mei, shohin_bunrui, hanbai_tanka, FIND_IN_SET( hanbai_tanka, ( SELECT GROUP_CONCAT( hanbai_tanka ORDER BY hanbai_tanka DESC) FROM db_shohins) )AS rank FROM db_shohins')
+    # railsでやる場合は販売単価でorderすればいいのでは?
+  end
+
+  def self.rank
+    # 販売単価のランキング、postgressやoracleだとrank関数が使えるが、mysqlでは使えないので、自作。順位を飛ばさないランキング
+    find_by_sql('SELECT shohin_mei, shohin_bunrui, hanbai_tanka, (SELECT COUNT(*) + 1 FROM (SELECT DISTINCT hanbai_tanka FROM db_shohins) AS shohin WHERE shohin.hanbai_tanka > db_shohins.hanbai_tanka) AS ranking  FROM db_shohins')
+  end
+
+  def self.group_rank
+    # 商品分類ごとの販売単価
+    find_by_sql('SELECT shohin_mei, shohin_bunrui, hanbai_tanka, (SELECT COUNT(*) + 1 FROM db_shohins AS shohin WHERE shohin.hanbai_tanka > db_shohins.hanbai_tanka) AS ranking  FROM db_shohins')
   end
 end
-

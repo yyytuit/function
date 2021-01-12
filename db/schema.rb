@@ -55,7 +55,7 @@ ActiveRecord::Schema.define(version: 2020_09_16_152823) do
   end
 
   create_table "tenposhohins", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.integer "shohin_id", null: false
+    t.integer "db_shohin_id", null: false
     t.string "code", null: false
     t.string "tenpo_mei", null: false
     t.integer "suryo", null: false
